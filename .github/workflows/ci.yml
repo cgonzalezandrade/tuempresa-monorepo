@@ -1,0 +1,41 @@
+name: CI/CD para Microservicios
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'micros/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'micros/**'
+
+jobs:
+  detect_changes:
+    runs-on: ubuntu-latest
+    outputs:
+      modified: ${{ steps.changed_files.outputs.modified }}
+    steps:
+      - name: Verificar archivos modificados
+        id: changed_files
+        uses: MarceloPrado/has-changed-path@v1
+        with:
+          paths: |
+            micros/*
+        continue-on-error: true
+
+  build:
+    needs: detect_changes
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        microservicio: ${{ fromJson(needs.detect_changes.outputs.modified) }}
+    steps:
+      - name: Clonar código
+        uses: actions/checkout@v4
+      - name: Construir y desplegar ${{ matrix.microservicio }}
+        run: |
+          cd micros/${{ matrix.microservicio }}
+          ./deploy.sh
